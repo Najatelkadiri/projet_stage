@@ -34,18 +34,18 @@ function App() {
 
   return (
     <Router>
-      <div className="app" >
-     
+      <div className="flex" >
+      <MenuPage />
      <div className="app flex min-h-screen">
-          <main className="flex-1 bg-gray-100 p-6 overflow-y-auto">
+          <main className="flex-1 bg-gray-100 p-6 overflow-y-autoz ml-72">
         <Routes>
             <Route path="/" element={<HomePage />} />
 
             <Route path="/vente" element={<VentePage />} />
-            <Route path="/login" element={<Login />} />
+            {/* <Route path="/login" element={<Login />} /> */}
              <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/menu" element={<MenuPage />} />
+            {/* <Route path="/register" element={<Register />} /> */}
+            {/* <Route path="/menu" element={<MenuPage />} /> */}
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/avance-detail" element={<AvanceDetailPage />} />
             <Route path="/avance-detail/:id" element={<AvanceDetailPage />} />

@@ -11,10 +11,11 @@ class VenteController extends Controller
     public function index()
     {
         // جلب جميع بيانات Vente مع العلاقات المحددة (Zone, Lot, Chantier)
-        return Vente::with(['zone', 'lot', 'chantier', 'niveau'])->paginate(10);
-      
+return Vente::with(['niveau', 'niveau.lot', 'niveau.lot.zone', 'niveau.lot.zone.chantier'])->paginate(10);      
     }
-    
+    // VenteController.php
+
+
 
     public function store(Request $request)
     {
@@ -49,11 +50,16 @@ class VenteController extends Controller
     }
     
 
-    public function show($id)
-    {
-        // جلب Vente واحدة مع العلاقات المحددة
-        return Vente::with(['zone', 'lot', 'chantier', 'niveau'])->findOrFail($id);
-    }
+   public function show($id)
+{
+    return Vente::with([
+        'niveau',
+        'niveau.lot',
+        'niveau.lot.zone',
+        'niveau.lot.zone.chantier'
+    ])->findOrFail($id);
+}
+
 
     public function update(Request $request, $id)
     {

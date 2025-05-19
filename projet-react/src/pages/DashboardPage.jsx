@@ -24,33 +24,9 @@ const Dashboard = () => {
         {/* Header */}
         <header className="bg-white border-b border-gray-200">
           <div className="flex items-center justify-between ">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="md:hidden text-gray-600 hover:text-gray-900"
-            >
-              {isSidebarOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-
+            
             <div className="flex-1 flex items-center justify-between">
-              {/* Search */}
-              <div className="max-w-lg w-full lg:max-w-xs ml-4 md:ml-0">
-                <label htmlFor="search" className="sr-only">Search</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="search"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Search"
-                    type="search"
-                  />
-                </div>
-              </div>
+           
 
               {/* Header Right */}
               <div className=" flex items-center md:ml-6">

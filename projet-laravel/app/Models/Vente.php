@@ -36,27 +36,16 @@ class Vente extends Model
     /**
      * العلاقة بمنطقة (Zone)
      */
+
     public function zone()
     {
-        return $this->belongsTo(Zone::class);
+        return $this->niveau->lot->zone();
     }
 
-    /**
-     * العلاقة بالقطعة (Lot)
-     */
-    public function lot()
-    {
-        return $this->belongsTo(Lot::class);
-    }
-
-    /**
-     * العلاقة بالموقع (Chantier)
-     */
     public function chantier()
     {
-        return $this->belongsTo(Chantier::class);
+        return $this->niveau->lot->zone->chantier();
     }
-
     /**
      * العلاقة بالمستوى (Niveau)
      */
@@ -64,4 +53,8 @@ class Vente extends Model
     {
         return $this->belongsTo(Niveau::class);
     }
+    public function lot()
+{
+    return $this->belongsTo(Lot::class);
+}
 }

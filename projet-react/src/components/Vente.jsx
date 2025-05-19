@@ -8,10 +8,13 @@ const Vente = () => {
   const [editedRow, setEditedRow] = useState({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRow, setNewRow] = useState({});
+  const [chantiers, setChantiers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const columns = [
+    { label: 'Zone', field: 'zone_id' },
+    { label: 'Lot', field: 'lot_id' },
     { label: 'Niveau', field: 'niveau_id' },
     { label: 'N° TF', field: 'n_tf' },
     { label: 'Acheteur', field: 'acheteur' },
@@ -41,14 +44,19 @@ const Vente = () => {
   };
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/ventes?page=${currentPage}`)
-      .then(res => res.json())
-      .then(data => {
-        setVentes(data.data);
-        setTotalPages(data.last_page);
+    axios.get(`http://127.0.0.1:8000/api/ventes?page=${currentPage}`)
+      .then(res => {
+        setVentes(res.data.data);
+        setTotalPages(res.data.last_page);
       })
       .catch(console.error);
   }, [currentPage]);
+
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/api/chantiers')
+      .then(res => setChantiers(res.data))
+      .catch(console.error);
+  }, []);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
@@ -68,7 +76,7 @@ const Vente = () => {
     try {
       const totals = calculateTotals(editedRow);
       const updatedRow = { ...editedRow, ...totals };
-      const res = await axios.put(`http://127.0.0.1:8000/api/ventes/${ventes[editingIndex].id}`, updatedRow);
+      const res = await axios.put(`http://127.0.0.1:8000/api/ventes/${editedRow.id}`, updatedRow);
       setVentes(ventes.map((row, i) => (i === editingIndex ? res.data.data : row)));
       setEditingIndex(null);
       setEditedRow({});
@@ -77,11 +85,19 @@ const Vente = () => {
     }
   };
 
-  const handleDelete = (idx) => {
-    setVentes(v => v.filter((_, i) => i !== idx));
+  const handleDelete = async (idx) => {
+    const vente = ventes[idx];
+    if (!vente?.id) return;
+
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/ventes/${vente.id}`);
+      setVentes(ventes.filter((_, i) => i !== idx));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAddRow = (e) => {
+  const handleAddRow = async (e) => {
     e.preventDefault();
     const totals = calculateTotals(newRow);
     const correctedRow = {
@@ -93,41 +109,66 @@ const Vente = () => {
       pu_b: +newRow.pu_b || 0,
       pu_vente: +newRow.pu_vente || 0,
       statut: newRow.statut || 'en cours',
+      chantier_id: +newRow.chantier_id || null,
     };
-    setVentes(prev => [...prev, correctedRow]);
-    localStorage.setItem('localVentes', JSON.stringify([...ventes, correctedRow]));
-    setNewRow({});
-    setShowAddForm(false);
+
+    try {
+      const res = await axios.post(`http://127.0.0.1:8000/api/ventes`, correctedRow);
+      setVentes([...ventes, res.data.data]);
+      setNewRow({});
+      setShowAddForm(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleNewRowChange = (e, field) => {
     setNewRow(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  const getValue = (row, field) => {
-    if (field.endsWith('_id')) {
-      const relation = field.replace('_id', '');
-      return row[relation]?.nom ?? 'N/A';
+  const getValue = (vente, field) => {
+    switch (field) {
+      case "zone_id":
+        return vente.niveau?.lot?.zone?.nom ?? "N/A";
+      case "lot_id":
+        return vente.niveau?.lot?.nom ?? "N/A";
+      case "niveau_id":
+        return vente.niveau?.nom ?? "N/A";
+      case "chantier_id":
+        return vente.niveau?.lot?.zone?.chantier?.nom ?? "N/A";
+      default:
+        return vente[field] ?? "N/A";
     }
-    return row[field] ?? 'N/A';
   };
+
+
+  
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="col-span-2">
+  <label className="block mb-1 font-medium">Chantier</label>
+  <select
+    value={newRow.chantier_id || ''}
+    onChange={(e) => setNewRow(prev => ({ ...prev, chantier_id: e.target.value }))}
+    className="w-full p-2 border rounded"
+  >
+    <option value="">Sélectionner un chantier</option>
+    {chantiers.map(chantier => (
+      <option key={chantier.id} value={chantier.id}>
+        {chantier.nom}
+      </option>
+    ))}
+  </select>
+</div>
+
       <div className="max-w-7xl mx-auto bg-white shadow-md rounded-lg overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 overflow-x-auto">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-100">
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-bold text-gray-600">Actions</th>
               {columns.map(col => (
-                <th key={col.field} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {col.label}
-                </th>
+                <th key={col.field} className="px-6 py-3 text-left text-xs font-bold text-gray-600">{col.label}</th>
               ))}
             </tr>
           </thead>
@@ -138,7 +179,7 @@ const Vente = () => {
                   {editingIndex === idx ? (
                     <div className="flex space-x-2">
                       <button onClick={handleSaveEdit} className="text-green-600"><FaCheck /></button>
-                      <button onClick={handleCancelEdit} className="text-red-500"><FaTimes /></button>
+                      <button onClick={handleCancelEdit} className="text-red-600"><FaTimes /></button>
                     </div>
                   ) : (
                     <div className="flex space-x-2">
@@ -148,13 +189,13 @@ const Vente = () => {
                   )}
                 </td>
                 {columns.map(col => (
-                  <td key={col.field} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td key={col.field} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {editingIndex === idx ? (
                       <input
                         type={col.field === 'date' ? 'date' : 'text'}
                         value={editedRow[col.field] || ''}
                         onChange={e => setEditedRow(prev => ({ ...prev, [col.field]: e.target.value }))}
-                        className="w-full p-2 border rounded"
+                        className="w-full p-1 border rounded"
                       />
                     ) : col.field === 'date' ? (
                       row.date ? new Date(row.date).toLocaleDateString() : 'N/A'
@@ -169,29 +210,14 @@ const Vente = () => {
         </table>
       </div>
 
-      <div className="max-w-7xl mx-auto mt-4 flex items-center justify-between">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-        >
-          Précédent
-        </button>
+      <div className="max-w-7xl mx-auto mt-4 flex justify-between items-center">
+        <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Précédent</button>
         <span>Page {currentPage} sur {totalPages}</span>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-        >
-          Suivant
-        </button>
+        <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Suivant</button>
       </div>
 
       <div className="max-w-7xl mx-auto mt-6 text-right">
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
+        <button onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
           <FaPlus /> Ajouter une vente
         </button>
       </div>
@@ -199,6 +225,20 @@ const Vente = () => {
       {showAddForm && (
         <div className="max-w-7xl mx-auto mt-6 p-4 bg-white rounded-lg shadow">
           <form onSubmit={handleAddRow} className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block mb-1 font-medium">Chantier</label>
+              <select
+                value={newRow.chantier_id || ''}
+                onChange={e => handleNewRowChange(e, 'chantier_id')}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">-- Sélectionner un chantier --</option>
+                {chantiers.map(c => (
+                  <option key={c.id} value={c.id}>{c.nom}</option>
+                ))}
+              </select>
+            </div>
+
             {columns.map(col => (
               <div key={col.field}>
                 <label className="block mb-1 font-medium">{col.label}</label>
@@ -210,24 +250,16 @@ const Vente = () => {
                 />
               </div>
             ))}
-            <div className="col-span-
-2 flex justify-between">
-<button
-type="button"
-onClick={() => setShowAddForm(false)}
-className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
->
-Annuler
-</button>
-<button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" >
-Enregistrer
-</button>
-</div>
-</form>
-</div>
-)}
-</div>
-);
+
+            <div className="col-span-2 flex justify-between mt-4">
+              <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Annuler</button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Vente;

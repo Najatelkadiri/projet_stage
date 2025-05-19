@@ -20,4 +20,5 @@ class Lot extends Model
     {
         return $this->hasMany(Niveau::class);
     }
+    
 }
